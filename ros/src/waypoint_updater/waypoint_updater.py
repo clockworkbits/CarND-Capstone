@@ -130,7 +130,6 @@ class WaypointUpdater(object):
         
     def publish_final_wp(self):
         self.nxtWayPoint = self.NextWaypoint()
-        #if self.nxtWayPoint != -1:
         waypoints = self.base_waypoints.waypoints
         self.final_waypoints.header.seq = self.seq
         self.final_waypoints.header.stamp = rospy.get_rostime()
@@ -195,7 +194,7 @@ class WaypointUpdater(object):
         angle = min(2*math.pi - angle, angle)
         if ( angle > math.pi/4 ) :
             closestWaypoint+=1
-        if (closestWaypoint == len(self.baseWayPoints.waypoints) ):
+        if (closestWaypoint == len(self.base_waypoints.waypoints) ):
             closestWaypoint = 0;
         return closestWaypoint
     
