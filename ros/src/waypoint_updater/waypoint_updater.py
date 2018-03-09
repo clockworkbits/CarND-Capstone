@@ -101,10 +101,15 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 
+DEBUG_MODE = True  #Switch for whether debug messages are printed.
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater')
+        if DEBUG_MODE:
+            rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
+        else:
+            rospy.init_node('waypoint_updater')
+        
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
@@ -113,19 +118,19 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
-        self.vehiclePose = PoseStamped()
+        self.vehiclePose = None
         self.base_waypoints = Lane()
         self.waypoint = Waypoint()
         self.nxtWayPoint = 0
         self.final_waypoints = Lane()
         self.seq = 0
         
-        rospy.spin()
+        self.loop()
 
     def pose_cb(self, msg):
         # TODO: Implement
         self.vehiclePose = msg
-        self.publish_final_wp()
+        rospy.logdebug("***** Pose received *****")
         pass
         
     def publish_final_wp(self):
@@ -141,6 +146,7 @@ class WaypointUpdater(object):
         else:
             self.final_waypoints.waypoints = waypoints[self.nxtWayPoint:]
         self.final_waypoints_pub.publish(self.final_waypoints)
+        rospy.logdebug("***** Publish Final Waypoints *****")
 
         self.seq +=1 #get ready for next round
 
@@ -156,6 +162,14 @@ class WaypointUpdater(object):
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
+
+    def loop(self):
+        rate = rospy.Rate(10) # 10Hz
+        while not rospy.is_shutdown():
+            if self.vehiclePose is not None:
+                self.publish_final_wp()
+            rate.sleep()
+
     #From Project Path Planing main.cpp
     #https://github.com/anasmatic/CarND-Term3-Project1-Path-Planning/blob/e6ce81f7ffc1b607910966de06fc4f6527f43985/src/main.cpp
     def distance_ClosestWaypoint(self, myPos, wayPos): #x1, y1, x2, y2)
