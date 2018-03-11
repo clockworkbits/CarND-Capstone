@@ -1,6 +1,7 @@
 from yaw_controller import YawController
 from pid import PID
 import rospy
+#import math
 
 from lowpass import LowPassFilter #TODO: find out how to use it
 
@@ -14,6 +15,7 @@ class Controller(object):
         '''args = [0:wheel_base,    1:steer_ratio,
                    2:max_lat_accel, 3:max_steer_angle,
                    4:decel_limit,   5:accel_limit
+                   6:sample_rate
         ]'''
         self.steer_ratio = args[1]##no need
         self.min_speed = (rospy.get_param('/waypoint_loader/velocity') * 1000.) / (60. * 60.) #kmph to mps
@@ -22,24 +24,22 @@ class Controller(object):
                                             self.min_speed ,
                                             args[2],#max_lat_accel
                                             args[3])#max_steer_angle
-        self.pid = PID( 0.1,0.01,1.0,args[4],args[5])
-        #0.12, 0.0, 3 , from my pid project is not working
-        ''' work log
-        0.5,0.01,0.2 	late , and swing increase over time
-        2.0, 0.4, 0.1	toooo late, swing haaaard, cant go right
-        50 , 0 , 0  good start but swing quickly and hard
-        50 , 0 , 0  good start but swing quickly and hard after more time
-        50 , 0 , 100 good first curve, after that will swing
-        
-        time to change ki
-        50 , 500 , 100 good satrt , the more curves the more swings we got
-        50 , 5 , 100 late reaction swing wide
-        bad bad bad bad
-        
-        .5 , 0 , 1 swing
-        .1 , 0 , 1 good start swing at first curve curve
-        .1 ,.01, 1
+        self.sample_time = 1.0/args[6] # 1/sample_rate
+        self.lowpass_tau = 1#1 is default value, it should be the max steering value allowed to avoid jerk
+        self.lowpass_steer = LowPassFilter(1, self.sample_time)
+        self.pid_throttle = PID( 3.0, 0.0, 0.5, args[4], args[5] )
         '''
+        ### DEBUGGING        
+        self.last_cte = 0        
+        self.count = 0        
+        self.err_all = 0        
+        self.err_avg = 0
+        self.err_min = 1000
+        self.err_max = 0
+        ### END OF DEBUGGING
+        '''
+        #0.12, 0.0, 3 , from my pid project is not working
+        
         pass
 
     def control(self, *args, **kwargs):
@@ -47,16 +47,31 @@ class Controller(object):
         ''' args = [0:proposed_linear_velocity,
                     1:proposed_angular_velocity,
                     2:current_linear_velocity,  
-                    3:is_dbw_enabled] from DBWNode dbw_node.py
+                    3:current_angular_velocity
+                    4:is_dbw_enabled] from DBWNode dbw_node.py
         '''
-        if args[3] : #if is_dbw_enabled
+        if args[4] : #if is_dbw_enabled
             steer =  self.yaw_controller.get_steering(args[0],args[1],args[2])#bad and delayed but smooth
+            #steer = self.lowpass_steer.filt(steer)#TODO: test before uncomment and commit
+            throttle_CTE = args[0]-args[2] #proposed_linear_velocity - current_linear_velocity
             
-            error = args[0] - args[2] #proposed_linear_velocity - current_linear_velocity
-            throttle = 0.2#self.pid.step(error,0.02)
+            throttle = self.pid_throttle.step(throttle_CTE,self.sample_time)#1/15 or 1/50
             #brake = 
             # Return throttle, brake, steer
-
+            '''
+            ### DEBUGING            
+            if self.last_cte != throttle_CTE and throttle_CTE < 0.3 and throttle_CTE != 0.0:
+                self.last_cte = throttle_CTE 
+                self.count += 1
+                self.err_all += abs(throttle_CTE)
+                self.err_avg = self.err_all/self.count
+                if self.err_max < abs(throttle_CTE):
+                    self.err_max = abs(throttle_CTE)
+                if self.err_min > abs(throttle_CTE):
+                    self.err_min = abs(throttle_CTE)
+            rospy.logdebug("throttle_CTE =%f , avg=%f, min=%f, max=%f",throttle_CTE , self.err_avg, self.err_min, self.err_max)    
+            #END OF DEBUGING
+            '''
         #else return default values        
         #return 1., 0., 0.2
         return throttle, 0., steer
