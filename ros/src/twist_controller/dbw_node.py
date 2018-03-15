@@ -41,7 +41,7 @@ class DBWNode(object):
 
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
         fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
-        brake_deadband = rospy.get_param('~brake_deadband', .1)
+        self.brake_deadband = rospy.get_param('~brake_deadband', .1)
         decel_limit = rospy.get_param('~decel_limit', -5)
         accel_limit = rospy.get_param('~accel_limit', 1.)
         wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
@@ -88,6 +88,7 @@ class DBWNode(object):
                                                                 self.proposed_angular_velocity,
                                                                 self.current_linear_velocity,
                                                                 self.current_angular_velocity,
+                                                                self.brake_deadband,
                                                                 self.is_dbw_enabled)#<dbw status>,
                                                                  #<any other argument you need>)
             if self.is_dbw_enabled:

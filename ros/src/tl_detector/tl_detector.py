@@ -16,7 +16,7 @@ from scipy import spatial #supports data structure for looking up nearest point 
 
 STATE_COUNT_THRESHOLD = 3
 DETECTOR_ENABLED      = False #Set True to use our actual traffic light detector instead of the message data
-DEBUG_MODE            = True  #Switch for whether debug messages are printed.  Unless agotterba sets this to true, he doesn't get debug messages even in the tl_detector log file
+DEBUG_MODE            = False  #Switch for whether debug messages are printed.  Unless agotterba sets this to true, he doesn't get debug messages even in the tl_detector log file
 
 class TLDetector(object):
     def __init__(self):
@@ -57,6 +57,8 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        
+        self.anas_last_sent_tl = -1#anas performance
 
         self.wp_kdtree = None #tree to store waypoints, using scipy.spatial
         self.num_wp    = 0    #number of waypoints received from base_waypoints
@@ -145,7 +147,7 @@ class TLDetector(object):
 
             self.tl_list = sorted(self.tl_list, key=lambda k: k['wp']) #sort list by waypoint index
             rospy.logdebug("tl_detector: traffic_cb created tl_list:")
-            self.pplog('debug',self.tl_list)
+            #self.pplog('debug',self.tl_list)
 
         # This section updates traffic light state from data in msg;
         #    duplicates some code so that it can be easily disabled with DETECTOR_ENABLED
@@ -167,7 +169,7 @@ class TLDetector(object):
                 tl_hash['state'] = state_tl_hash['state']
 
             rospy.logdebug("tl_detector: traffic_cb updated states in tl_list:")
-            self.pplog('debug',self.tl_list)
+            #self.pplog('debug',self.tl_list)
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -195,11 +197,15 @@ class TLDetector(object):
             self.last_state = self.state
             light_wp = light_wp if state == TrafficLight.RED else -1
             self.last_wp = light_wp
-            self.upcoming_red_light_pub.publish(Int32(light_wp))
-            rospy.logdebug("tl_detector: published waypoint of next red light's stop line: %d",light_wp)
+            if self.anas_last_sent_tl != light_wp :#anas : only publish if state changed
+                self.upcoming_red_light_pub.publish(Int32(light_wp))
+                self.anas_last_sent_tl = light_wp
+            #rospy.logdebug("tl_detector: published waypoint of next red light's stop line: %d",light_wp)
         else:
-            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-            rospy.logdebug("tl_detector: published waypoint of next red light's stop line: %d",self.last_wp)
+            if self.anas_last_sent_tl != self.last_wp :#anas : only publish if state changed
+                self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                self.anas_last_sent_tl = self.last_wp
+            #rospy.logdebug("tl_detector: published waypoint of next red light's stop line: %d",self.last_wp)
         self.state_count += 1
 
     def get_closest_waypoint(self, pose):
@@ -288,7 +294,7 @@ class TLDetector(object):
         else:
             rospy.logwarn("tl_detector: process_traffic_lights not calling get_closest_waypoint because pose is false")
             rospy.logwarn("  pose:")
-            self.pplog('warn',self.pose)
+            #self.pplog('warn',self.pose)
             
         #TODO find the closest visible traffic light (if one exists)
 
