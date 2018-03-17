@@ -41,10 +41,10 @@ class DBWNode(object):
 
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
         fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
-        self.brake_deadband = rospy.get_param('~brake_deadband', .1)
+        brake_deadband = rospy.get_param('~brake_deadband', .1)
+        wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
         decel_limit = rospy.get_param('~decel_limit', -5)
         accel_limit = rospy.get_param('~accel_limit', 1.)
-        wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
         wheel_base = rospy.get_param('~wheel_base', 2.8498)
         steer_ratio = rospy.get_param('~steer_ratio', 14.8)
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
@@ -70,6 +70,8 @@ class DBWNode(object):
         self.controller = Controller(wheel_base,    steer_ratio,
                                     max_lat_accel,  max_steer_angle,
                                     decel_limit,    accel_limit,
+                                    brake_deadband, vehicle_mass ,
+                                    fuel_capacity,  wheel_radius,
                                     self.sample_rate)#(<Arguments you wish to provide>)
 
         # DONE->TODO: Subscribe to all the topics you need to
@@ -88,7 +90,6 @@ class DBWNode(object):
                                                                 self.proposed_angular_velocity,
                                                                 self.current_linear_velocity,
                                                                 self.current_angular_velocity,
-                                                                self.brake_deadband,
                                                                 self.is_dbw_enabled)#<dbw status>,
                                                                  #<any other argument you need>)
             if self.is_dbw_enabled:
