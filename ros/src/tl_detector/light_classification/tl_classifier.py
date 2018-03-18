@@ -155,14 +155,6 @@ class TLClassifier(object):
         self.img_count += 1
         self.debug("tl_classifier: entered get_classification for image %d",self.img_count)
         cur_image_num = self.img_count
-        if(DEBUG_MODE and IMAGE_CAPTURE):
-            self.debug("tl_classifier: writing received image, numbered: %d"%cur_image_num)
-            if not os.path.exists(IMAGE_CAPTURE_PATH):
-                self.debug("  creating directory %s"%IMAGE_CAPTURE_PATH)
-                os.makedirs(IMAGE_CAPTURE_PATH)
-            filename = IMAGE_CAPTURE_PATH + "/tc_image_%d.jpg"%cur_image_num
-            self.debug("  calling imwrite on file %s"%filename)
-            cv2.imwrite(filename,cv2.cvtColor(image,cv2.COLOR_RGB2BGR))
 
         #image_expanded = np.exapnd_dims(image,axis=0)
         output_dict = self.run_inference_for_single_image(image)
@@ -170,6 +162,7 @@ class TLClassifier(object):
         self.pplog('debug',output_dict)
         class_state = -1 #used to represent 'unknown'
         light_state = TrafficLight.UNKNOWN
+        light_string = 'unknown'
         #report a detection with score > SCORE_THRESH, unless another detection with score > SCORE_THRESH disagrees with it
         for i in range(output_dict['num_detections']):
             if(output_dict['detection_scores'][i] > SCORE_THRESH):
@@ -182,10 +175,22 @@ class TLClassifier(object):
 
         if(class_state == 1):
             light_state = TrafficLight.RED
+            light_string = 'red'
         elif(class_state == 2):
             light_state = TrafficLight.GREEN
+            light_string = 'green'
         elif(class_state == 3):
             light_state = TrafficLight.YELLOW
+            light_string = 'amber'
+
+        if(DEBUG_MODE and IMAGE_CAPTURE):
+            self.debug("tl_classifier: writing received image, numbered: %d"%cur_image_num)
+            if not os.path.exists(IMAGE_CAPTURE_PATH):
+                self.debug("  creating directory %s"%IMAGE_CAPTURE_PATH)
+                os.makedirs(IMAGE_CAPTURE_PATH)
+            filename = IMAGE_CAPTURE_PATH + "/tc_image_%d_%s.jpg"%(cur_image_num,light_string)
+            self.debug("  calling imwrite on file %s"%filename)
+            cv2.imwrite(filename,cv2.cvtColor(image,cv2.COLOR_RGB2BGR))
 
         self.debug("tl_classifier: returning light_state %d for image %d",light_state,cur_image_num)
         return light_state
