@@ -28,13 +28,16 @@ class Controller(object):
         self.min_speed = (rospy.get_param('/waypoint_loader/velocity') * 1000.) / (60. * 60.) #kmph to mps
         self.yaw_controller = YawController(args[0],#wheel_base
                                             args[1],#steer_ratio
-                                            self.min_speed ,
+                                            0,
                                             args[2],#max_lat_accel
                                             args[3])#max_steer_angle
         self.sample_time = 1.0/args[6] # 1/sample_rate
-        self.lowpass_tau = 1#1 is default value, it should be the max steering value allowed to avoid jerk
-        self.lowpass_steer = LowPassFilter(1, self.sample_time)
+        self.lowpass_tau = .03#1 is default value, it should be the max steering value allowed to avoid jerk
+        self.lowpass_throttle = LowPassFilter(self.lowpass_tau, self.sample_time)
         self.pid_throttle = PID( 3.0, 0.0, 0.5, args[4], args[5] )
+        self.pid_steer = PID( 10.0, 0.01, 1.0, (-1*args[3]), args[3] )
+        #10.0, 0.0, 3.0 good
+        #10.0, 0.0, 1.0, 
         
         pass
 
@@ -47,7 +50,13 @@ class Controller(object):
                     4:is_dbw_enabled] from DBWNode dbw_node.py
         '''
         if args[4] : #if is_dbw_enabled
-            steer =  self.yaw_controller.get_steering(args[0],args[1],args[2])#bad and delayed but smooth
+            #rospy.logdebug("proposed_angular_velocity:%f",args[1])    
+            #rospy.logdebug("current_angular_velocity:%f",args[3])
+            #steer =  self.yaw_controller.get_steering(args[0],args[1],args[2])#bad and delayed but smooth
+            steer_CTE = args[1]-args[3]
+            #rospy.logdebug("steer_CTE :%f",steer_CTE)
+            steer = self.pid_steer.step(steer_CTE, self.sample_time)
+            #rospy.logdebug("steer :%f",steer)
             #steer = self.lowpass_steer.filt(steer)#TODO: test before uncomment and commit
             throttle_CTE = args[0]-args[2] #proposed_linear_velocity - current_linear_velocity
             throttle = self.pid_throttle.step(throttle_CTE,self.sample_time)#1/15 or 1/50
