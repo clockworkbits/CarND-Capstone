@@ -12,7 +12,8 @@ import pprint             #format data structures into strings, for logging
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-PATH_TO_CKPT           = dir_path + '/models/tld_simulator_model/frozen_inference_graph.pb'
+#PATH_TO_CKPT           = dir_path + '/models/tld_simulator_model/frozen_inference_graph.pb'
+PATH_TO_CKPT           = dir_path + '/models/tld_simulator_model/faster_frozen_inference_graph.pb'
 SCORE_THRESH           = 0.65  #detection_score threshold to report a positive result, or invalidate a differeing result
 IMAGE_CAPTURE          = True #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
 IMAGE_CAPTURE_PATH     = dir_path + '/captured_images'
