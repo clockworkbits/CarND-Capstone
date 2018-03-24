@@ -11,15 +11,15 @@ import pprint             #format data structures into strings, for logging
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-SIMULATOR_TRACK        = True  #Controls whether to use simulator track model instead of parking_lot
+SIMULATOR_TRACK        = False  #Controls whether to use simulator track model instead of parking_lot
 SCORE_THRESH           = 0.50  #detection_score threshold to report a positive result, or invalidate a differeing result
-IMAGE_CAPTURE          = False #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
+IMAGE_CAPTURE          = True #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
 IMAGE_CAPTURE_PATH     = dir_path + '/captured_images'
-DEBUG_MODE             = False #DEBUG_MODE does not send messages to terminal unless it is set in tl_detector.py
+DEBUG_MODE             = True #DEBUG_MODE does not send messages to terminal unless it is set in tl_detector.py
 
-PATH_TO_CKPT           = dir_path + '/models/tld_parking_lot_model/frozen_inference_graph.pb'
+PATH_TO_CKPT           = dir_path + '/models/tld_parking_lot_model/faster_frozen_inference_graph.pb'
 if (SIMULATOR_TRACK):
-    PATH_TO_CKPT       = dir_path + '/models/tld_simulator_model/frozen_inference_graph.pb'
+    PATH_TO_CKPT       = dir_path + '/models/tld_simulator_model/faster_frozen_inference_graph.pb'
 
 class TLClassifier(object):
     def __init__(self,image_size,debug=None,info=None,warn=None,error=None):
@@ -46,7 +46,12 @@ class TLClassifier(object):
         self.debug("tl_classifier: using tensor flow version %s"%tf.__version__)
 
         self.img_count = 0
-            
+        self.img_width  = image_size[0]
+        self.img_height = image_size[1]
+        self.crop_width = self.img_width
+        self.crop_height = self.img_height
+        if not SIMULATOR_TRACK:
+            self.crop_height = int(0.7*self.crop_height)
         #load classifier
         self.detection_graph = tf.Graph()
         with self.detection_graph.as_default():
@@ -81,7 +86,7 @@ class TLClassifier(object):
                     detection_boxes = tf.slice(detection_boxes, [0, 0], [real_num_detection, -1])
                     detection_masks = tf.slice(detection_masks, [0, 0, 0], [real_num_detection, -1, -1])
                     detection_masks_reframed = utils_ops.reframe_box_masks_to_image_masks(
-                        detection_masks, detection_boxes, image_size[0], image_size[1])
+                        detection_masks, detection_boxes, self.crop_width, self.crop_height)
                     detection_masks_reframed = tf.cast(
                         tf.greater(detection_masks_reframed, 0.5), tf.uint8)
                     # Follow the convention by adding back the batch dimension
@@ -160,8 +165,7 @@ class TLClassifier(object):
         self.img_count += 1
         self.debug("tl_classifier: entered get_classification for image %d",self.img_count)
         cur_image_num = self.img_count
-
-        #image_expanded = np.exapnd_dims(image,axis=0)
+        image = image[0:self.crop_height,0:self.crop_width]
         output_dict = self.run_inference_for_single_image(image)
         self.debug("tl_classifier: inference returned the following output_dict for image %d:",cur_image_num)
         self.pplog('debug',output_dict)
