@@ -9,17 +9,18 @@ import pprint             #format data structures into strings, for logging
 #PATH_TO_LABELS = os.path.join('frcnni_simulator_training/', 'tld_simulator_label_map.pbtxt')
 #NUM_CLASSES = 3
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-
 SIMULATOR_TRACK        = False  #Controls whether to use simulator track model instead of parking_lot
-SCORE_THRESH           = 0.50  #detection_score threshold to report a positive result, or invalidate a differeing result
 IMAGE_CAPTURE          = True #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
-IMAGE_CAPTURE_PATH     = dir_path + '/captured_images'
 DEBUG_MODE             = True #DEBUG_MODE does not send messages to terminal unless it is set in tl_detector.py
 
+dir_path = os.path.dirname(os.path.realpath(__file__))
+SCORE_THRESH           = 0.50  #detection_score threshold to report a positive result, or invalidate a differeing result
+IMAGE_CAPTURE_PATH     = dir_path + '/captured_images'
 PATH_TO_CKPT           = dir_path + '/models/tld_parking_lot_model/faster_frozen_inference_graph.pb'
 if (SIMULATOR_TRACK):
     PATH_TO_CKPT       = dir_path + '/models/tld_simulator_model/faster_frozen_inference_graph.pb'
+
+
 
 class TLClassifier(object):
     def __init__(self,image_size,debug=None,info=None,warn=None,error=None):
