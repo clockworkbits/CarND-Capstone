@@ -15,8 +15,8 @@ from numpy import asarray
 from scipy import spatial #supports data structure for looking up nearest point (essentially a binary search tree)
 
 DETECTOR_ENABLED      = True  #Set True to use our actual traffic light detector instead of the message data
-DEBUG_MODE            = True  #Switch for whether debug messages are printed.  Unless agotterba sets this to true, he doesn't get debug messages even in the tl_detector log file
-PARKING_LOT_TEST      = True
+DEBUG_MODE            = False  #Switch for whether debug messages are printed.  Unless agotterba sets this to true, he doesn't get debug messages even in the tl_detector log file
+PARKING_LOT_TEST      = False
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -174,7 +174,7 @@ class TLDetector(object):
 
             self.tl_list = sorted(self.tl_list, key=lambda k: k['wp']) #sort list by waypoint index
             rospy.logdebug("tl_detector: traffic_cb created tl_list")
-            #self.pplog('debug',self.tl_list)
+            self.pplog('debug',self.tl_list)
 
         # This section updates traffic light state from data in msg;
         #    duplicates some code so that it can be easily disabled with DETECTOR_ENABLED
@@ -359,10 +359,10 @@ class TLDetector(object):
                 wps_to_tl = tl_hash['wp'] - car_position
                 if (wps_to_tl < 0):   # we've wrapped around waypoint list to beginning
                     wps_to_tl += self.num_wp
-                    if (wps_to_tl < wps_to_closest_tl):
-                        wps_to_closest_tl = wps_to_tl
-                        light = i
-                        light_wp = tl_hash['wp']
+                if (wps_to_tl < wps_to_closest_tl):
+                    wps_to_closest_tl = wps_to_tl
+                    light = i
+                    light_wp = tl_hash['wp']
 
         if light is not None or PARKING_LOT_TEST:
             state = self.get_light_state(light,image_num)

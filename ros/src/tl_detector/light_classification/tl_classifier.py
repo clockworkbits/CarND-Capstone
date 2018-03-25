@@ -9,8 +9,8 @@ import pprint             #format data structures into strings, for logging
 #PATH_TO_LABELS = os.path.join('frcnni_simulator_training/', 'tld_simulator_label_map.pbtxt')
 #NUM_CLASSES = 3
 
-SIMULATOR_TRACK        = False  #Controls whether to use simulator track model instead of parking_lot
-IMAGE_CAPTURE          = True #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
+SIMULATOR_TRACK        = True  #Controls whether to use simulator track model instead of parking_lot
+IMAGE_CAPTURE          = False #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
 DEBUG_MODE             = True #DEBUG_MODE does not send messages to terminal unless it is set in tl_detector.py
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -37,8 +37,9 @@ class TLClassifier(object):
         if(error):
             self.error = error
 
-        if(DEBUG_MODE):
-            self.warning("tl_classifier: DEBUG_MODE enabled.  Disable for PR or submission")
+        #It's fine to leave debug mode on, since it won't do anything unless DEBUG_MODE is enabled in tl_detector.py
+        #if(DEBUG_MODE):
+        #    self.warning("tl_classifier: DEBUG_MODE enabled.  Disable for PR or submission")
         if(IMAGE_CAPTURE):
             self.warning("tl_classifier: IMAGE_CAPTURE enabled.  Disable for PR or submission")
         if(SIMULATOR_TRACK):
