@@ -12,6 +12,10 @@ import pprint             #format data structures into strings, for logging
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 SIMULATOR_TRACK        = False  #Controls whether to use simulator track model instead of parking_lot
+IMAGE_CAPTURE          = True #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
+DEBUG_MODE             = True #DEBUG_MODE does not send messages to terminal unless it is set in tl_detector.py
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
 SCORE_THRESH           = 0.50  #detection_score threshold to report a positive result, or invalidate a differeing result
 IMAGE_CAPTURE          = False #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
 IMAGE_CAPTURE_PATH     = dir_path + '/captured_images'
