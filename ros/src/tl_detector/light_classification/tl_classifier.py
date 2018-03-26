@@ -14,13 +14,13 @@ IMAGE_CAPTURE          = True #write images to file in debug mode.  Aside from i
 DEBUG_MODE             = True #DEBUG_MODE does not send messages to terminal unless it is set in tl_detector.py
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-SCORE_THRESH           = 0.50  #detection_score threshold to report a positive result, or invalidate a differeing result
+
+SCORE_THRESH           = 0.20  #detection_score threshold to report a positive result, or invalidate a differeing result
 IMAGE_CAPTURE_PATH     = dir_path + '/captured_images'
-PATH_TO_CKPT           = dir_path + '/models/tld_parking_lot_model/faster_frozen_inference_graph.pb'
+#PATH_TO_CKPT           = dir_path + '/models/tld_parking_lot_model/tld_frcnn_inception_10/frozen_inference_graph.pb'
+PATH_TO_CKPT           = dir_path + '/models/tld_parking_lot_model/tld_ssd_inception_v2/frozen_inference_graph.pb'
 if (SIMULATOR_TRACK):
     PATH_TO_CKPT       = dir_path + '/models/tld_simulator_model/faster_frozen_inference_graph.pb'
-
-
 
 class TLClassifier(object):
     def __init__(self,image_size,debug=None,info=None,warn=None,error=None):
