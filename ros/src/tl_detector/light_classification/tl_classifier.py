@@ -9,19 +9,16 @@ import pprint             #format data structures into strings, for logging
 #PATH_TO_LABELS = os.path.join('frcnni_simulator_training/', 'tld_simulator_label_map.pbtxt')
 #NUM_CLASSES = 3
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-
 SIMULATOR_TRACK        = False  #Controls whether to use simulator track model instead of parking_lot
-IMAGE_CAPTURE          = True #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
-DEBUG_MODE             = True #DEBUG_MODE does not send messages to terminal unless it is set in tl_detector.py
-
-dir_path = os.path.dirname(os.path.realpath(__file__))
-SCORE_THRESH           = 0.50  #detection_score threshold to report a positive result, or invalidate a differeing result
 IMAGE_CAPTURE          = False #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
-IMAGE_CAPTURE_PATH     = dir_path + '/captured_images'
 DEBUG_MODE             = False #DEBUG_MODE does not send messages to terminal unless it is set in tl_detector.py
 
-PATH_TO_CKPT           = dir_path + '/models/tld_parking_lot_model/tld_frcnn_inception_10/frozen_inference_graph.pb'
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
+SCORE_THRESH           = 0.10  #detection_score threshold to report a positive result, or invalidate a differeing result
+IMAGE_CAPTURE_PATH     = dir_path + '/captured_images'
+#PATH_TO_CKPT           = dir_path + '/models/tld_parking_lot_model/tld_frcnn_inception_10/frozen_inference_graph.pb'
+PATH_TO_CKPT           = dir_path + '/models/tld_parking_lot_model/tld_ssd_inception_v2/frozen_inference_graph.pb'
 if (SIMULATOR_TRACK):
     PATH_TO_CKPT       = dir_path + '/models/tld_simulator_model/faster_frozen_inference_graph.pb'
 
@@ -184,6 +181,7 @@ class TLClassifier(object):
             if(output_dict['detection_scores'][i] > SCORE_THRESH):
                 if (class_state == -1):
                     class_state = output_dict['detection_classes'][i]
+                    break #add break here to ignore weaker detections, even if they're above SCORE_THRESH
                 else:
                     if(output_dict['detection_classes'][i] != class_state):
                         class_state = -1
