@@ -359,10 +359,10 @@ class TLDetector(object):
                 wps_to_tl = tl_hash['wp'] - car_position
                 if (wps_to_tl < 0):   # we've wrapped around waypoint list to beginning
                     wps_to_tl += self.num_wp
-                    if (wps_to_tl < wps_to_closest_tl):
-                        wps_to_closest_tl = wps_to_tl
-                        light = i
-                        light_wp = tl_hash['wp']
+                if (wps_to_tl < wps_to_closest_tl):
+                    wps_to_closest_tl = wps_to_tl
+                    light = i
+                    light_wp = tl_hash['wp']
 
         if light is not None or PARKING_LOT_TEST:
             state = self.get_light_state(light,image_num)
