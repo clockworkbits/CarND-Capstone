@@ -44,10 +44,12 @@ class Controller(object):
                     4:is_dbw_enabled] from DBWNode dbw_node.py
         '''
         if args[4] : #if is_dbw_enabled
-            #steer =  self.yaw_controller.get_steering(args[0],args[1],args[2])#bad and delayed but smooth
+        
             steer_CTE = args[1]-args[3]
-            
-            steer = self.pid_steer.step(steer_CTE, self.sample_time)
+            if(steer_CTE < 0.2) : #0.2+ error is rare in High way, while most of Lot curves will have more than 0.2 error
+                steer =  self.yaw_controller.get_steering(args[0],args[1],args[2])#bad and delayed but smooth
+            else :
+                steer = self.pid_steer.step(steer_CTE, self.sample_time)
             
             throttle_CTE = args[0]-args[2] #proposed_linear_velocity - current_linear_velocity
             throttle = self.pid_throttle.step(throttle_CTE,self.sample_time)#1/15 or 1/50
