@@ -11,6 +11,9 @@ from tf.transformations import euler_from_quaternion
 from scipy.spatial.distance import euclidean
 import math
 from itertools import cycle, islice
+import timeit
+from scipy.spatial import KDTree
+import numpy as np
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -27,9 +30,7 @@ as well as to verify your TL classifier.
 
 LOOKAHEAD_WPS   = 200   # Number of waypoints we will publish. For Test Lot, please put a value smaller than 60
 CIRCULAR_WPS    = False # If True, assumes that the path to follow is a loop
-REFRESH_RATE_HZ = 2     # Number of times we update the final waypoints per second
-UPDATE_MAX_ITER = 50    # Max number of iterations before considering relooking for the next waypoint in full path
-WAYPOINT_INCREMENT_RATE = 5 # The number of the waypoints that is added when searching for the next one ahead
+REFRESH_RATE_HZ = 50     # Number of times we update the final waypoints per second should be 50Hz for submission
 DEBUG_MODE      = False # Switch for whether debug messages are printed.
 TL_DETECTOR_ON  = False # If False, switches to direct traffic light subscription
 DECELLERATION   = 3     # Decelleration in m/s^2
@@ -75,8 +76,8 @@ class WaypointUpdater(object):
         if TL_DETECTOR_ON:
             rospy.logwarn('waypoint_updater: Traffic Light Detector disabled - Enable for submission')
 
-        if WAYPOINT_INCREMENT_RATE != 1:
-            rospy.logwarn('waypoint_updater: Waypoint increment rate should be set to 1 for submission')
+        if REFRESH_RATE_HZ < 50:
+            rospy.logwarn('waypoint_updater: REFRESH_RATE_HZ is lower than 50Hz - Increase for submission')
 
         self.next_waypoint_indices = self.next_waypoint_indices_circular if CIRCULAR_WPS else self.next_waypoint_indices_simple
 
@@ -94,24 +95,34 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-
         self.next_waypoint = 0
         self.next_red_tl_wp = 0
         self.previous_pos = None
+        self.waypoint_tree = None
+        self.waypoints_2d = None
         self.static_waypoints = None
         self.static_velocities = None  # Static waypoints with adjusted velocity
         self.last_update = time.time()
-        rospy.spin()
+        self.loop()
+
+    def loop(self):
+        rate = rospy.Rate(REFRESH_RATE_HZ)
+        while not rospy.is_shutdown():
+            if self.previous_pos:
+                self.publish_update()
+            rate.sleep()
 
     def pose_cb(self, msg):
         self.previous_pos = msg.pose
-        if time.time() - self.last_update > 1. / REFRESH_RATE_HZ:
-            self.publish_update()
 
     def waypoints_cb(self, waypoints):
         self.static_waypoints = waypoints.waypoints  # Lane message is a structure with header and waypoints
         self.static_velocities = [self.get_static_waypoint_id_velocity(wp)
                                   for wp in range(len(self.static_waypoints))]
+
+        if not self.waypoints_2d:
+            self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
+            self.waypoint_tree = KDTree(self.waypoints_2d)
         rospy.loginfo('Received {} base waypoints'.format(len(self.static_waypoints)))
 
     def traffic_light_array_cb(self, msg):
@@ -193,29 +204,31 @@ class WaypointUpdater(object):
         angle = normalize_angle(yaw-heading)
         return True if math.fabs(angle) < math.pi/4. else False
 
-    def update_next_waypoint(self):
-        it = 0
-        nb_waypoints = len(self.static_waypoints)
-        get_wp = lambda wp: wp % nb_waypoints if CIRCULAR_WPS else min(wp, nb_waypoints-1)
-        while not self.waypoint_is_ahead(self.static_waypoints[get_wp(self.next_waypoint)]) and \
-                it < UPDATE_MAX_ITER:
-            it += 1
-            self.next_waypoint = get_wp(self.next_waypoint+WAYPOINT_INCREMENT_RATE)  # We look at the next one
-
-        # Searching the next waypoint in the full path takes much longer, we want to avoid it as much as possible
-        if it == UPDATE_MAX_ITER:
-            self.search_next_waypoint()
-
     def search_next_waypoint(self):
-        self.next_waypoint = 0
-        rospy.logwarn("Initiating search for closest waypoint...")
+        start_time = timeit.default_timer()
+        rospy.logdebug("Initiating search for closest waypoint...")
         # We basically search among all static waypoints the closest waypoint ahead
-        for i in range(len(self.static_waypoints)):
-            if self.waypoint_is_ahead(self.static_waypoints[i]) and \
-                    self.distance_to_previous(self.static_waypoints[i].pose.pose) < \
-                    self.distance_to_previous(self.static_waypoints[self.next_waypoint].pose.pose):
-                self.next_waypoint = i
-        rospy.logwarn('Found next closest waypoint: {}'.format(self.next_waypoint))
+        x, y, _ = get_position(self.previous_pos)
+        closest_index = self.waypoint_tree.query([x, y], 1)[1]
+        
+        closest_coord = self.waypoints_2d[closest_index]
+
+        prev_coord = self.waypoints_2d[closest_index - 1 if closest_index > 0 else closest_index]
+
+        cl_vect = np.array(closest_coord)
+        prev_vect = np.array(prev_coord)
+        pos_vext = np.array([x, y])
+
+        val = np.dot(cl_vect - prev_vect, pos_vext - cl_vect)
+
+        if val > 0:
+            self.next_waypoint = (closest_index + 1) % len(self.waypoints_2d)
+        else:
+            self.next_waypoint = closest_index
+
+
+        elapsed = timeit.default_timer() - start_time
+        rospy.logdebug('Found next closest waypoint: {} - elapsed time = {}'.format(self.next_waypoint, elapsed))
 
     # --- Next waypoint indices functions ---
     def next_waypoint_indices_circular(self):
@@ -232,8 +245,8 @@ class WaypointUpdater(object):
 
     def publish_update(self):
         # Emits the new waypoints, but only if we have received the base waypoints
-        if self.static_waypoints:
-            self.update_next_waypoint()
+        if self.static_waypoints and self.waypoints_2d and self.waypoint_tree:
+            self.search_next_waypoint()
             rospy.logdebug("Next waypoint: {}".format(self.next_waypoint))
             self.final_waypoints_pub.publish(Lane(waypoints=self.next_waypoints()))
 
