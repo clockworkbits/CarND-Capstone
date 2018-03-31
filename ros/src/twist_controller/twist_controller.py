@@ -7,6 +7,8 @@ from lowpass import LowPassFilter #TODO: find out how to use it
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
+USE_YAW_CONTOLLER = False # Use the Yaw controller if True, otherwise use the PID controller
+
 class Controller(object):
     def __init__(self, *args, **kwargs):
         # TODO: Implement
@@ -44,10 +46,11 @@ class Controller(object):
                     4:is_dbw_enabled] from DBWNode dbw_node.py
         '''
         if args[4] : #if is_dbw_enabled
-            #steer =  self.yaw_controller.get_steering(args[0],args[1],args[2])#bad and delayed but smooth
-            steer_CTE = args[1]-args[3]
-            
-            steer = self.pid_steer.step(steer_CTE, self.sample_time)
+            if USE_YAW_CONTOLLER:
+                steer = self.yaw_controller.get_steering(args[0],args[1],args[2])#bad and delayed but smooth
+            else:
+                steer_CTE = args[1]-args[3]
+                steer = self.pid_steer.step(steer_CTE, self.sample_time)
             
             throttle_CTE = args[0]-args[2] #proposed_linear_velocity - current_linear_velocity
             throttle = self.pid_throttle.step(throttle_CTE,self.sample_time)#1/15 or 1/50
