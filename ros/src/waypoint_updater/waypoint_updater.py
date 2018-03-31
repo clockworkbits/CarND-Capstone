@@ -29,7 +29,7 @@ as well as to verify your TL classifier.
 '''
 
 LOOKAHEAD_WPS   = 200   # Number of waypoints we will publish. For Test Lot, please put a value smaller than 60
-CIRCULAR_WPS    = True # If True, assumes that the path to follow is a loop
+CIRCULAR_WPS    = False # If True, assumes that the path to follow is a loop
 REFRESH_RATE_HZ = 50     # Number of times we update the final waypoints per second should be 50Hz for submission
 DEBUG_MODE      = False # Switch for whether debug messages are printed.
 TL_DETECTOR_ON  = True  # If False, switches to direct traffic light subscription
