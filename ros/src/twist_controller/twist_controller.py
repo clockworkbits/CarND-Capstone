@@ -44,10 +44,10 @@ class Controller(object):
                     4:is_dbw_enabled] from DBWNode dbw_node.py
         '''
         if args[4] : #if is_dbw_enabled
-            #steer =  self.yaw_controller.get_steering(args[0],args[1],args[2])#bad and delayed but smooth
-            steer_CTE = args[1]-args[3]
+            steer =  self.yaw_controller.get_steering(args[0],args[1],args[2])#bad and delayed but smooth
+            #steer_CTE = args[1]-args[3]
             
-            steer = self.pid_steer.step(steer_CTE, self.sample_time)
+            #steer = self.pid_steer.step(steer_CTE, self.sample_time)
             
             throttle_CTE = args[0]-args[2] #proposed_linear_velocity - current_linear_velocity
             throttle = self.pid_throttle.step(throttle_CTE,self.sample_time)#1/15 or 1/50
