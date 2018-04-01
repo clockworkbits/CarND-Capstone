@@ -2,6 +2,16 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
 Please use **one** of the two installation options, either native **or** docker installation.
 
+## Team members
+
+| *Name* | *Email* | *Role/Responsibility* |
+| ------ | --------| --------------------- |
+| Marcin Gierlicki | marcin.gierlicki@gmail.com | Team Lead |
+| Anas Metwally | anasmatic@gmail.com | Drive By Wire Node |
+| Andy Gotterba | agotterba@gmail.com | Traffic Light Detection |
+| Lorenzo Lucido | lucido.lorenzo@gmail.com | Waypoint Updater |
+| Jodie Alaine Parker | j0d1e@yahoo.com | Traffic Light Detection |
+
 ### Native Installation
 
 * Be sure that your workstation is running Ubuntu 16.04 Xenial Xerus or Ubuntu 14.04 Trusty Tahir. [Ubuntu downloads can be found here](https://www.ubuntu.com/download/desktop).
