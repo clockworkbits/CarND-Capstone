@@ -32,7 +32,7 @@ LOOKAHEAD_WPS   = 200   # Number of waypoints we will publish. For Test Lot, ple
 CIRCULAR_WPS    = False # If True, assumes that the path to follow is a loop
 REFRESH_RATE_HZ = 50     # Number of times we update the final waypoints per second should be 50Hz for submission
 DEBUG_MODE      = False # Switch for whether debug messages are printed.
-TL_DETECTOR_ON  = False # If False, switches to direct traffic light subscription
+TL_DETECTOR_ON  = False  # If False, switches to direct traffic light subscription
 DECELLERATION   = 3     # Decelleration in m/s^2
 
 
@@ -73,7 +73,7 @@ class WaypointUpdater(object):
         if DEBUG_MODE:
             rospy.logwarn('waypoint_updater: DEBUG mode enabled - Disable for submission')
 
-        if TL_DETECTOR_ON:
+        if not TL_DETECTOR_ON:
             rospy.logwarn('waypoint_updater: Traffic Light Detector disabled - Enable for submission')
 
         if REFRESH_RATE_HZ < 50:
@@ -162,7 +162,7 @@ class WaypointUpdater(object):
                 for wp in wp_indices:
                     tl_wp = self.static_waypoints[self.next_red_tl_wp]
                     check_wp = self.static_waypoints[wp]
-                    if self.distance_to_previous(check_wp.pose.pose) > self.distance_to_previous(tl_wp.pose.pose) - 1:
+                    if self.distance_to_previous(check_wp.pose.pose) > self.distance_to_previous(tl_wp.pose.pose) - 3.0: #center of car should stop 3 meters before stop line
                         self.set_waypoint_id_velocity(wp, 0.0)
                     else:
                         dist_wp_to_stop = euclidean_distance(check_wp, tl_wp)

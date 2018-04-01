@@ -164,15 +164,16 @@ class TLDetector(object):
                 tl_hash['light_x'] = tl.pose.pose.position.x
                 tl_hash['light_y'] = tl.pose.pose.position.y
                 tl_hash['light_z'] = tl.pose.pose.position.z
+                tl_dist,tl_hash['light_wp'] = self.wp_kdtree.query(asarray((tl_hash['light_x'],tl_hash['light_y'])))
                 #Do we need orientation too?  only z and w have non-zero values
                 tl_hash['stop_x']  = stop_line_positions[i][0]
                 tl_hash['stop_y']  = stop_line_positions[i][1]
-                tl_dist,tl_hash['wp'] = self.wp_kdtree.query(asarray((tl_hash['stop_x'],tl_hash['stop_y'])))
+                tl_dist,tl_hash['stop_wp'] = self.wp_kdtree.query(asarray((tl_hash['stop_x'],tl_hash['stop_y'])))
                 tl_hash['state'] = TrafficLight.UNKNOWN
                 self.tl_list.append(tl_hash)
                 i += 1
 
-            self.tl_list = sorted(self.tl_list, key=lambda k: k['wp']) #sort list by waypoint index
+            self.tl_list = sorted(self.tl_list, key=lambda k: k['light_wp']) #sort list by waypoint index
             rospy.logdebug("tl_detector: traffic_cb created tl_list")
             #self.pplog('debug',self.tl_list)
 
@@ -187,11 +188,11 @@ class TLDetector(object):
                 state_tl_hash = {}
                 stop_x = stop_line_positions[i][0]
                 stop_y = stop_line_positions[i][1]
-                state_tl_dist,state_tl_hash['wp'] = self.wp_kdtree.query(asarray((stop_x,stop_y)))
+                state_tl_dist,state_tl_hash['stop_wp'] = self.wp_kdtree.query(asarray((stop_x,stop_y)))
                 state_tl_hash['state'] = tl.state
                 state_tl_list.append(state_tl_hash)
 
-            state_tl_list = sorted(state_tl_list, key=lambda k: k['wp']) #sort list by waypoint index
+            state_tl_list = sorted(state_tl_list, key=lambda k: k['stop_wp']) #sort list by waypoint index
 
             for tl_hash,state_tl_hash in zip (self.tl_list,state_tl_list): #as locations don't change, sorting by nearest waypoint will generate same order
                 tl_hash['state'] = state_tl_hash['state']
@@ -356,13 +357,13 @@ class TLDetector(object):
         i = 0
         if self.tl_list:
             for tl_hash in self.tl_list: #check all lights to find closest. 
-                wps_to_tl = tl_hash['wp'] - car_position
+                wps_to_tl = tl_hash['light_wp'] - car_position
                 if (wps_to_tl < 0):   # we've wrapped around waypoint list to beginning
                     wps_to_tl += self.num_wp
                 if (wps_to_tl < wps_to_closest_tl):
                     wps_to_closest_tl = wps_to_tl
                     light = i
-                    light_wp = tl_hash['wp']
+                    light_wp = tl_hash['stop_wp']
 
         if light is not None or PARKING_LOT_TEST:
             state = self.get_light_state(light,image_num)
