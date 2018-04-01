@@ -32,7 +32,7 @@ LOOKAHEAD_WPS   = 200   # Number of waypoints we will publish. For Test Lot, ple
 CIRCULAR_WPS    = False # If True, assumes that the path to follow is a loop
 REFRESH_RATE_HZ = 50     # Number of times we update the final waypoints per second should be 50Hz for submission
 DEBUG_MODE      = False # Switch for whether debug messages are printed.
-TL_DETECTOR_ON  = False  # If False, switches to direct traffic light subscription
+TL_DETECTOR_ON  = False # If False, switches to direct traffic light subscription
 DECELLERATION   = 3     # Decelleration in m/s^2
 
 

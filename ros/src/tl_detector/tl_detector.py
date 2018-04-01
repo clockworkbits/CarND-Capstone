@@ -220,7 +220,7 @@ class TLDetector(object):
         self.camera_image = msg
         image_num = self.img_count
         rospy.logdebug("tl_detector: image_cb processing image %d",image_num)
-        light_wp, state = self.process_traffic_lights(image_num)
+        stop_wp, state = self.process_traffic_lights(image_num)
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -234,10 +234,10 @@ class TLDetector(object):
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
             #report light if red or yellow, so we don't freak out or blow the stop line when it suddenly turns red
-            light_wp = light_wp if state == TrafficLight.RED or state == TrafficLight.YELLOW else -1
-            self.last_wp = light_wp
-            self.upcoming_red_light_pub.publish(Int32(light_wp))
-            rospy.logdebug("tl_detector: from image %d (vs. current image %d), published waypoint of next red light's stop line: %d",image_num,self.img_count,light_wp)
+            stop_wp = stop_wp if state == TrafficLight.RED or state == TrafficLight.YELLOW else -1
+            self.last_wp = stop_wp
+            self.upcoming_red_light_pub.publish(Int32(stop_wp))
+            rospy.logdebug("tl_detector: from image %d (vs. current image %d), published waypoint of next red light's stop line: %d",image_num,self.img_count,stop_wp)
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
             rospy.logdebug("tl_detector: from image %d (vs. current image %d), published waypoint of prevously reported red light's stop line: %d",image_num,self.img_count,self.last_wp)
@@ -339,7 +339,7 @@ class TLDetector(object):
         """
         rospy.logdebug("tl_detector: entered process_traffic_lights")
         light = None
-        light_wp = 1
+        stop_wp = 1
 
         # List of positions that correspond to the line to stop in front of for a given intersection.  already saved this to tl_list
         #stop_line_positions = self.config['stop_line_positions']
@@ -363,11 +363,11 @@ class TLDetector(object):
                 if (wps_to_tl < wps_to_closest_tl):
                     wps_to_closest_tl = wps_to_tl
                     light = i
-                    light_wp = tl_hash['stop_wp']
+                    stop_wp = tl_hash['stop_wp']
 
         if light is not None or PARKING_LOT_TEST:
             state = self.get_light_state(light,image_num)
-            return light_wp, state
+            return stop_wp, state
 
         rospy.logwarn("tl_detector: process_traffic_lights did not find any light that was next.  this shouldn't happen")
         self.waypoints = None
