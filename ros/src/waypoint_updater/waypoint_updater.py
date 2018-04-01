@@ -73,7 +73,7 @@ class WaypointUpdater(object):
         if DEBUG_MODE:
             rospy.logwarn('waypoint_updater: DEBUG mode enabled - Disable for submission')
 
-        if TL_DETECTOR_ON:
+        if not TL_DETECTOR_ON:
             rospy.logwarn('waypoint_updater: Traffic Light Detector disabled - Enable for submission')
 
         if REFRESH_RATE_HZ < 50:
@@ -162,7 +162,7 @@ class WaypointUpdater(object):
                 for wp in wp_indices:
                     tl_wp = self.static_waypoints[self.next_red_tl_wp]
                     check_wp = self.static_waypoints[wp]
-                    if self.distance_to_previous(check_wp.pose.pose) > self.distance_to_previous(tl_wp.pose.pose) - 1:
+                    if self.distance_to_previous(check_wp.pose.pose) > self.distance_to_previous(tl_wp.pose.pose) - 3.0: #center of car should stop 3 meters before stop line
                         self.set_waypoint_id_velocity(wp, 0.0)
                     else:
                         dist_wp_to_stop = euclidean_distance(check_wp, tl_wp)
