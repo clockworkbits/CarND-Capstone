@@ -8,7 +8,7 @@ Please use **one** of the two installation options, either native **or** docker 
 | ------ | --------| --------------------- |
 | Marcin Gierlicki | marcin.gierlicki@gmail.com | Team Lead |
 | Anas Metwally | anasmatic@gmail.com | Drive By Wire Node |
-| Andy Gotterba | agotterba@gmail.com | Traffic Light Detection |
+| Andreas Gotterba | agotterba@gmail.com | Traffic Light Detection |
 | Lorenzo Lucido | lucido.lorenzo@gmail.com | Waypoint Updater |
 | Jodie Alaine Parker | j0d1e@yahoo.com | Traffic Light Detection |
 
