@@ -33,7 +33,7 @@ that we have created in the `__init__` function.
 
 '''
 
-DEBUG_MODE            = False
+DEBUG_MODE            = True
 
 class DBWNode(object):
     def __init__(self):
@@ -53,7 +53,10 @@ class DBWNode(object):
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
         
-        
+        ####### params for debuggin ####### 
+        self.was = 0;
+        self.reported = False
+        ####### ####### ####### ####### 
         #custom vars
         self.sample_rate = 50
         self.is_dbw_enabled = True
@@ -89,6 +92,17 @@ class DBWNode(object):
         while not rospy.is_shutdown():
             # Done->TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
+            ####### debug when velocity is more than 0 : when car starts to move after a stop #######
+            if self.proposed_linear_velocity != 0 and self.was != 1:
+                self.was = 1
+                self.reported = False
+            elif self.proposed_linear_velocity  == 0 and self.was != 0:
+                self.was = 0
+                self.reported = False
+            if self.was == 1 and self.reported == False:
+                rospy.logdebug("_____ velocity is not 0 any more")
+                self.reported = True
+            ####### ####### ####### ####### ####### ####### ####### ####### ####### ####### ####### 
             throttle, brake, steering = self.controller.control(self.proposed_linear_velocity,
                                                                 self.proposed_angular_velocity,
                                                                 self.current_linear_velocity,

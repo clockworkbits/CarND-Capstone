@@ -15,7 +15,7 @@ from numpy import asarray
 from scipy import spatial #supports data structure for looking up nearest point (essentially a binary search tree)
 
 DETECTOR_ENABLED      = True  #Set True to use our actual traffic light detector instead of the message data
-DEBUG_MODE            = False  #Switch for whether debug messages are printed.  Unless agotterba sets this to true, he doesn't get debug messages even in the tl_detector log file
+DEBUG_MODE            = True  #Switch for whether debug messages are printed.  Unless agotterba sets this to true, he doesn't get debug messages even in the tl_detector log file
 PARKING_LOT_TEST      = False
 
 STATE_COUNT_THRESHOLD = 3
@@ -84,7 +84,11 @@ class TLDetector(object):
         self.ready_wp         = True
         self.ready_classifier = True
         self.ready_image_cb   = True
-
+        
+        ####### params required to debug time for green light ####### 
+        self.was = 0;
+        self.reported = False
+        ####### ####### ####### ####### ####### ####### ####### ####### 
         rospy.logwarn("tl_detector: intialization finished")
 
         rospy.spin()
@@ -152,7 +156,7 @@ class TLDetector(object):
     def traffic_cb(self, msg):
         self.lights = msg
         
-        rospy.logdebug("tl_detector: traffic_cb received traffic lights:")
+        #rospy.logdebug("tl_detector: traffic_cb received traffic lights:")
         #self.pplog('debug',self.lights)
 
         if (self.tl_list is None and self.wp_kdtree is not None): #we've received waypoints, but haven't initialized tl_list
@@ -196,8 +200,19 @@ class TLDetector(object):
 
             for tl_hash,state_tl_hash in zip (self.tl_list,state_tl_list): #as locations don't change, sorting by nearest waypoint will generate same order
                 tl_hash['state'] = state_tl_hash['state']
-
-            rospy.logdebug("tl_detector: traffic_cb updated states in tl_list:")
+            ####### Debug when car recives a Green light ####### ####### ####### 
+            if tl_hash['state'] != 0 and self.was != 1 :
+                self.was = 1
+                self.reported = False
+            elif tl_hash['state'] == 0 and self.was != 0 :
+                self.was = 0
+                self.reported = False
+            if self.was == 1 and self.reported == False:
+                rospy.logdebug("_____ GREEEEN LIGHT")
+                self.reported = True
+            ####### ####### ####### ####### ####### ####### ####### ####### 
+                
+            #rospy.logdebug("tl_detector: traffic_cb updated states in tl_list:")
             #self.pplog('debug',self.tl_list)
 
     def image_cb(self, msg):

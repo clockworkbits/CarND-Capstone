@@ -31,8 +31,8 @@ as well as to verify your TL classifier.
 LOOKAHEAD_WPS   = 200   # Number of waypoints we will publish. For Test Lot, please put a value smaller than 60
 CIRCULAR_WPS    = False # If True, assumes that the path to follow is a loop
 REFRESH_RATE_HZ = 50     # Number of times we update the final waypoints per second should be 50Hz for submission
-DEBUG_MODE      = False # Switch for whether debug messages are printed.
-TL_DETECTOR_ON  = True  # If False, switches to direct traffic light subscription
+DEBUG_MODE      = True # Switch for whether debug messages are printed.
+TL_DETECTOR_ON  = False  # If False, switches to direct traffic light subscription
 DECELLERATION   = 3     # Decelleration in m/s^2
 
 
@@ -192,6 +192,9 @@ class WaypointUpdater(object):
     def restore_all_velocities(self):
         for wp_id in range(len(self.static_waypoints)):
             self.restore_waypoint_id_velocity(wp_id)
+        ####### Debug when we restore velocities after a green light is detected ####### 
+        rospy.logdebug("_____ restore_all_velocities")
+        ####### ####### ####### ####### ####### ####### ####### ####### ####### ####### 
 
     def distance_to_previous(self, position):
         return euclidean(get_position(self.previous_pos), get_position(position))
@@ -206,7 +209,7 @@ class WaypointUpdater(object):
 
     def search_next_waypoint(self):
         start_time = timeit.default_timer()
-        rospy.logdebug("Initiating search for closest waypoint...")
+        #rospy.logdebug("Initiating search for closest waypoint...")
         # We basically search among all static waypoints the closest waypoint ahead
         x, y, _ = get_position(self.previous_pos)
         closest_index = self.waypoint_tree.query([x, y], 1)[1]
@@ -228,7 +231,7 @@ class WaypointUpdater(object):
 
 
         elapsed = timeit.default_timer() - start_time
-        rospy.logdebug('Found next closest waypoint: {} - elapsed time = {}'.format(self.next_waypoint, elapsed))
+        #rospy.logdebug('Found next closest waypoint: {} - elapsed time = {}'.format(self.next_waypoint, elapsed))
 
     # --- Next waypoint indices functions ---
     def next_waypoint_indices_circular(self):
@@ -247,7 +250,7 @@ class WaypointUpdater(object):
         # Emits the new waypoints, but only if we have received the base waypoints
         if self.static_waypoints and self.waypoints_2d and self.waypoint_tree:
             self.search_next_waypoint()
-            rospy.logdebug("Next waypoint: {}".format(self.next_waypoint))
+            #rospy.logdebug("Next waypoint: {}".format(self.next_waypoint))
             self.final_waypoints_pub.publish(Lane(waypoints=self.next_waypoints()))
 
         self.last_update = time.time()
