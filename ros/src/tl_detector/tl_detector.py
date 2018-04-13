@@ -357,7 +357,11 @@ class TLDetector(object):
         i = 0
         if self.tl_list:
             for tl_hash in self.tl_list: #check all lights to find closest. 
-                wps_to_tl = tl_hash['light_wp'] - car_position
+
+                #report next traffic light as soon as car crosses stopo line, as half-images don't detect correctly
+                #wps_to_tl = tl_hash['light_wp'] - car_position
+                wps_to_tl = tl_hash['stop_wp'] - car_position
+
                 if (wps_to_tl < 0):   # we've wrapped around waypoint list to beginning
                     wps_to_tl += self.num_wp
                 if (wps_to_tl < wps_to_closest_tl):
