@@ -7,7 +7,7 @@ from lowpass import LowPassFilter #TODO: find out how to use it
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
-USE_YAW_CONTOLLER = False # Use the Yaw controller if True, otherwise use the PID controller
+USE_YAW_CONTOLLER = True # Use the Yaw controller if True, otherwise use the PID controller
 
 class Controller(object):
     def __init__(self, *args, **kwargs):
