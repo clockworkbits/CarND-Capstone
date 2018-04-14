@@ -32,7 +32,7 @@ class Controller(object):
                                             args[2],#max_lat_accel
                                             args[3])#max_steer_angle
         self.sample_time = 1.0/args[6] # 1/sample_rate
-        self.pid_throttle = PID( 3.0, 0.0, 0.5, args[4], args[5] )
+        self.pid_throttle = PID( 0.2,0.0005,0.05, args[4], args[5] )
         self.pid_steer = PID( 2.0, 0.15, 0.6, (-1*args[3]), args[3] ) 
         
         pass
