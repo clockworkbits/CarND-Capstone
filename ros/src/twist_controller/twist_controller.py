@@ -32,17 +32,8 @@ class Controller(object):
                                             args[2],#max_lat_accel
                                             args[3])#max_steer_angle
         self.sample_time = 1.0/args[6] # 1/sample_rate
-        self.pid_throttle = PID( 1.0, 0.0, 0.5, args[4], args[5] )
-        self.pid_steer = PID( 2.0, 0.15, 0.7, (-1*args[3]), args[3] ) 
-        #throttle lowpass filter        
-        self.lowpass_filter = LowPassFilter(100,self.sample_time)
-        
-        #debug
-        self.debug_throttle_arr = np.array([]) 
-        self.debug_throttle_err_arr = np.array([]) 
-        self.debug_steering = np.array([]) 
-        self.debug_proangvel = np.array([])         
-        self.debug_can_debug = False
+        self.pid_throttle = PID( 0.2,0.0005,0.05, args[4], args[5] )
+        self.pid_steer = PID( 2.0, 0.15, 0.6, (-1*args[3]), args[3] ) 
         
         pass
     
