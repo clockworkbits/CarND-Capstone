@@ -154,6 +154,12 @@ class WaypointUpdater(object):
         if self.next_red_tl_wp != msg.data:
             rospy.logdebug("===> Next Traffic Light: %i", msg.data)
             self.next_red_tl_wp = msg.data
+
+            if self.next_red_tl_wp > 0:
+                rospy.logwarn("Next Traffic Light - Red or Yellow (id = %i)", self.next_red_tl_wp)
+            else:
+                rospy.logwarn("Next Traffic Light - Green")
+
             # 1: restore original speeds
             self.restore_all_velocities()
             # 2: gradually reduce speed in order to get to zero to next red light
