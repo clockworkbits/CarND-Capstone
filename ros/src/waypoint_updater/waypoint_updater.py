@@ -152,32 +152,43 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         if self.next_red_tl_wp != msg.data:
-            rospy.logdebug("===> Next Traffic Light: %i", msg.data)
+            rospy.logdebug("===> waypoint_updater: Next Traffic Light: %i", msg.data)
             self.next_red_tl_wp = msg.data
 
             if self.next_red_tl_wp > 0:
-                rospy.logwarn("Next Traffic Light - Red or Yellow (id = %i)", self.next_red_tl_wp)
+                rospy.logwarn("waypoint_updater: Stop command received for waypoint  %i (ie light is red/yellow)", self.next_red_tl_wp)
             else:
-                rospy.logwarn("Next Traffic Light - Green")
+                rospy.logwarn("waypoint_updater: Stop command cancelled (ie light is green/unknown)")
 
             # 1: restore original speeds
             self.restore_all_velocities()
             # 2: gradually reduce speed in order to get to zero to next red light
             if self.next_red_tl_wp > 0:
                 wp_indices = self.next_waypoint_indices()
+                first_slow_wp_set = False
+                first_slow_wp = -1
+                last_slow_wp = wp_indices[-1]
                 for wp in wp_indices:
                     tl_wp = self.static_waypoints[self.next_red_tl_wp]
                     check_wp = self.static_waypoints[wp]
                     if self.distance_to_previous(check_wp.pose.pose) > self.distance_to_previous(tl_wp.pose.pose) - 3.0: #center of car should stop 3 meters before stop line
                         self.set_waypoint_id_velocity(wp, 0.0)
+                        if wp < last_slow_wp:
+                            last_slow_wp = wp
                     else:
                         dist_wp_to_stop = euclidean_distance(check_wp, tl_wp)
                         current_wp_vel = self.get_static_waypoint_id_velocity(wp)
                         # Assuming car goes at 25 mph, i.e. 11.2 m/s, we need 30 meters to stop in order to ensure we
                         # stay below 5 m/s^2
                         target_vel = min(dist_wp_to_stop / (current_wp_vel / DECELLERATION), current_wp_vel)
+                        if (target_vel < current_wp_vel and not first_slow_wp_set):
+                            first_slow_wp = wp
+                            first_slow_wp_set = True
                         self.set_waypoint_id_velocity(wp, target_vel)
 
+                rospy.logwarn("waypoint_updater: decreasing velocity from target speed %d to 0 between waypoints %d and %d",self.static_velocities[first_slow_wp],first_slow_wp,last_slow_wp)
+            else:
+                rospy.logwarn("waypoint_updater: resetting velocity targets to target speed %d",self.static_velocities[self.next_waypoint])
 
     def obstacle_cb(self, msg):
         # Callback for /obstacle_waypoint message. We will implement it later

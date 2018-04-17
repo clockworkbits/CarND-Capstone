@@ -20,6 +20,8 @@ PARKING_LOT_TEST      = False
 
 STATE_COUNT_THRESHOLD = 3
 
+LIGHT_STRINGS = ['Red','Yellow','Green','Unused','Undetected']
+
 class TLDetector(object):
     def __init__(self):
 
@@ -29,6 +31,7 @@ class TLDetector(object):
 
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
+        self.prev_wp = -1
         self.last_wp = -1
         self.state_count = 0
         self.img_count = 0
@@ -221,6 +224,9 @@ class TLDetector(object):
         image_num = self.img_count
         rospy.logdebug("tl_detector: image_cb processing image %d",image_num)
         stop_wp, state = self.process_traffic_lights(image_num)
+        if (stop_wp != self.prev_wp):
+            rospy.logwarn("tl_detector: changed waypoint of next stopline from %d to %d",self.prev_wp,stop_wp)
+            self.prev_wp = stop_wp
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -229,10 +235,13 @@ class TLDetector(object):
         used.
         '''
         if self.state != state:
+            rospy.logwarn("tl_detector: detected unfiltered change from %s to %s ",LIGHT_STRINGS[self.state],LIGHT_STRINGS[state])
             self.state_count = 0
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
-            self.last_state = self.state
+            if (self.last_state != self.state):
+                rospy.logwarn("tl_detector: transition completed from %s to %s",LIGHT_STRINGS[self.last_state],LIGHT_STRINGS[self.state])
+                self.last_state = self.state
             #report light if red or yellow, so we don't freak out or blow the stop line when it suddenly turns red
             stop_wp = stop_wp if state == TrafficLight.RED or state == TrafficLight.YELLOW else -1
             self.last_wp = stop_wp
@@ -316,16 +325,16 @@ class TLDetector(object):
                 classifier_state =  self.light_classifier.get_classification(cv_image)
                 self.ready_classifier = True
             else:
-                rospy.logdebug("tl_detector: get_light_state: skipping inference for image %d because the classifier isn't ready yet.  Returning previous value %d",image_num,self.state)
+                rospy.logdebug("tl_detector: get_light_state: skipping inference for image %d because the classifier isn't ready yet.  Returning previous value %s",image_num,LIGHT_STRINGS[self.state])
                 classifier_state = self.state
             if PARKING_LOT_TEST:
-                rospy.logdebug("tl_detector: get_light_state: classifer for image %d returned state %d",image_num,classifier_state)
+                rospy.logdebug("tl_detector: get_light_state: classifer for image %d returned %s",image_num,LIGHT_STRINGS[classifier_state])
             else:
-                rospy.logdebug("tl_detector: get_light_state: classifer for image %d returned state %d, vs contemp. state %d and current sim state %d",image_num,classifier_state,contemp_state,self.tl_list[light]['state'])
+                rospy.logdebug("tl_detector: get_light_state: classifer for image %d returned %s, vs contemp. state %s and current sim state %s",image_num,LIGHT_STRINGS[classifier_state],LIGHT_STRINGS[contemp_state],LIGHT_STRINGS[self.tl_list[light]['state']])
             #return self.tl_list[light]['state']
             return classifier_state
         else:
-            rospy.logdebug("tl_detector: get_light_state: detector not enabled; returning simulator light state %d"%self.tl_list[light]['state'])
+            rospy.logdebug("tl_detector: get_light_state: detector not enabled; returning simulator light state %s",LIGHT_STRINGS[self.tl_list[light]['state']])
             return self.tl_list[light]['state']
 
     def process_traffic_lights(self,image_num):
