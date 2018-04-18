@@ -1,9 +1,9 @@
 import rospy
 import numpy as np
-import matplotlib.pyplot as plt
 from yaw_controller import YawController
 from pid import PID
 from lowpass import LowPassFilter #TODO: find out how to use it
+#import matplotlib.pyplot as plt
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
