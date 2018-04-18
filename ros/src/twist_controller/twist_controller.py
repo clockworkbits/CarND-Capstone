@@ -35,7 +35,7 @@ class Controller(object):
         self.pid_throttle = PID( 1.0, 0.0, 0.5, args[4], args[5] )
         self.pid_steer = PID( 2.0, 0.15, 0.7, (-1*args[3]), args[3] ) 
         #throttle lowpass filter        
-        self.lowpass_filter = LowPassFilter(100,self.sample_time)
+        self.lowpass_filter = LowPassFilter(500,self.sample_time)
         
         #debug
         self.debug_throttle_arr = np.array([]) 
@@ -43,6 +43,7 @@ class Controller(object):
         self.debug_steering = np.array([]) 
         self.debug_proangvel = np.array([])         
         self.debug_can_debug = False
+        np.set_printoptions(threshold=np.nan)#force print all array elements
         
         pass
     
