@@ -33,7 +33,7 @@ that we have created in the `__init__` function.
 
 '''
 
-DEBUG_MODE            = False
+DEBUG_MODE            = True
 
 class DBWNode(object):
     def __init__(self):
@@ -56,7 +56,7 @@ class DBWNode(object):
         
         #custom vars
         self.sample_rate = 50
-        self.is_dbw_enabled = True
+        self.is_dbw_enabled = False
         self.proposed_linear_velocity = 0.0
         self.proposed_angular_velocity = 0.0
         self.current_linear_velocity = 0.0
