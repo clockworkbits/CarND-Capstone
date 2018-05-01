@@ -36,6 +36,7 @@ class Controller(object):
         self.pid_steer = PID( 2.0, 0.15, 0.7, (-1*args[3]), args[3] ) 
         #throttle lowpass filter        
         self.lowpass_filter = LowPassFilter(500,self.sample_time)
+        self.lowpass_filter = LowPassFilter(90,self.sample_time)
         
         #debug
         self.debug_throttle_arr = np.array([]) 
