@@ -35,7 +35,7 @@ class Controller(object):
         self.pid_throttle = PID( 1.0, 0.0, 0.5, args[4], args[5] )
         self.pid_steer = PID( 2.0, 0.15, 0.7, (-1*args[3]), args[3] ) 
         #throttle lowpass filter        
-        self.lowpass_filter = LowPassFilter(500,self.sample_time)
+        #self.lowpass_filter = LowPassFilter(500,self.sample_time)
         self.lowpass_filter = LowPassFilter(90,self.sample_time)
         
         #debug
@@ -66,7 +66,7 @@ class Controller(object):
             
             throttle_CTE = args[0]-args[2] #proposed_linear_velocity - current_linear_velocity
             throttle = self.pid_throttle.step(throttle_CTE,self.sample_time)#1/15 or 1/50
-            throttle = self.lowpass_filter.filt(throttle)
+            #throttle = self.lowpass_filter.filt(throttle)
             brake = 0
             
             if self.debug_can_debug:
@@ -82,6 +82,7 @@ class Controller(object):
                 throttle = 0
             else : 
                 brake = 0
+                throttle = self.lowpass_filter.filt(throttle)
                 if throttle > 0:#my debug
                     self.debug_can_debug = True#my debug
             #car used to NEVER stop on trafic lights, it was sliding sooo slow, to fix it :
