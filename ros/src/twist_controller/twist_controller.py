@@ -3,7 +3,7 @@ import numpy as np
 from yaw_controller import YawController
 from pid import PID
 from lowpass import LowPassFilter #TODO: find out how to use it
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
@@ -20,6 +20,8 @@ class Controller(object):
                    8:fuel_capacity, 9:wheel_radius ,
                    10:sample_rate
         ]'''
+        self.decel_limit = args[4]
+        self.accel_limit = args[5]
         self.brake_deadband = args[6]
         self.vehicle_mass   = args[7]
         self.fuel_capacity  = args[8]
@@ -32,11 +34,12 @@ class Controller(object):
                                             args[2],#max_lat_accel
                                             args[3])#max_steer_angle
         self.sample_time = 1.0/args[6] # 1/sample_rate
-        self.pid_throttle = PID( 1.0, 0.0, 0.5, args[4], args[5] )
+        self.pid_arr = [0.05,0.00001,0.047]#1.0, 0.0, 0.5
+        self.pid_throttle = PID( self.pid_arr[0], self.pid_arr[1], self.pid_arr[2], self.decel_limit, self.accel_limit )
         self.pid_steer = PID( 2.0, 0.15, 0.7, (-1*args[3]), args[3] ) 
         #throttle lowpass filter        
-        #self.lowpass_filter = LowPassFilter(500,self.sample_time)
-        self.lowpass_filter = LowPassFilter(90,self.sample_time)
+        self.lowpass_filter = LowPassFilter(500,self.sample_time)
+        #self.lowpass_filter = LowPassFilter(90,self.sample_time)
         
         #debug
         self.debug_throttle_arr = np.array([]) 
@@ -78,7 +81,8 @@ class Controller(object):
             #Brakes system
             if throttle < 0:
                 #code refereace : https://discussions.udacity.com/t/what-is-the-range-for-the-brake-in-the-dbw-node/412339
-                brake = (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * (throttle*-1) * self.wheel_radius
+                throttle = max(throttle_CTE,self.decel_limit)                
+                brake = (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * abs(throttle) * self.wheel_radius
                 throttle = 0
             else : 
                 brake = 0
@@ -89,10 +93,10 @@ class Controller(object):
             #hold brakes if proposed_linear_velocity too low while no brakes
             if (args[0] < 0.01) and (brake < self.brake_deadband):
                 brake = self.brake_deadband
-                self.draw_graph()#my debug
+                #self.draw_graph()#my debug
             
             #my debug
-            if args[0] < 0.01: self.draw_graph()
+            #if args[0] < 0.01: self.draw_graph()
         else :
             #Submission checklist and requirements
             self.pid_steer.reset()
@@ -105,6 +109,7 @@ class Controller(object):
     def draw_graph(self):
         #time.sleep(3)
         if self.debug_can_debug :
+            rospy.logdebug("#__ PID: %f,%f,%f",self.pid_arr[0], self.pid_arr[1], self.pid_arr[2])            
             self.debug_can_debug = False
             rospy.logdebug("#__ CAR STOPPPPPPPPPPPPPPPPPPPPP ")
             rospy.logdebug("#__ MEAN_CTE: %f",np.mean(self.debug_throttle_arr))            
@@ -117,10 +122,21 @@ class Controller(object):
             rospy.logdebug(self.debug_steering)
             rospy.logdebug("#__ ang: ")
             rospy.logdebug(self.debug_proangvel)            
+            x1 = np.linspace(0.0, 100.0, len(self.debug_throttle_arr))
+            x2 = np.linspace(0.0, 100.0, len(self.debug_throttle_arr))
+            plt.subplot(2, 1, 1)
+            plt.plot(x1, self.debug_throttle_arr, '.-')
+            plt.title("p:"+str(self.pid_arr[0])+",i:"+str(self.pid_arr[1])+",d:"+str(self.pid_arr[2]))
+            plt.ylabel('Throttle')
+
+            plt.subplot(2, 1, 2)
+            plt.plot(x2, self.debug_throttle_err_arr, '.-')
+            plt.ylabel('CTE')                                
+            plt.show()            
 
             self.debug_throttle_arr = np.array([]) 
             self.debug_throttle_err_arr = np.array([]) 
             self.debug_steering = np.array([]) 
-            self.debug_proangvel = np.array([]) 
+            self.debug_proangvel = np.array([])            
             
-        
+            
