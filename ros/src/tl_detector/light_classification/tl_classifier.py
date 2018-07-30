@@ -9,7 +9,7 @@ import pprint             #format data structures into strings, for logging
 #PATH_TO_LABELS = os.path.join('frcnni_simulator_training/', 'tld_simulator_label_map.pbtxt')
 #NUM_CLASSES = 3
 
-SIMULATOR_TRACK        = False  #Controls whether to use simulator track model instead of parking_lot
+SIMULATOR_TRACK        = True  #Controls whether to use simulator track model instead of parking_lot
 IMAGE_CAPTURE          = False #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
 DEBUG_MODE             = False #DEBUG_MODE does not send messages to terminal unless it is set in tl_detector.py
 

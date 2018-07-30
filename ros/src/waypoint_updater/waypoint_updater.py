@@ -2,6 +2,7 @@
 
 import rospy
 from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import TwistStamped
 from styx_msgs.msg import Lane, Waypoint
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from std_msgs.msg import Int32
@@ -28,13 +29,14 @@ current status in `/vehicle/traffic_lights` message. You can use this message to
 as well as to verify your TL classifier.
 '''
 
-LOOKAHEAD_WPS   = 200   # Number of waypoints we will publish. For Test Lot, please put a value smaller than 60
-CIRCULAR_WPS    = False # If True, assumes that the path to follow is a loop
-REFRESH_RATE_HZ = 50     # Number of times we update the final waypoints per second should be 50Hz for submission
-DEBUG_MODE      = False # Switch for whether debug messages are printed.
-TL_DETECTOR_ON  = True  # If False, switches to direct traffic light subscription
-DECELLERATION   = 3     # Decelleration in m/s^2
-
+LOOKAHEAD_WPS   = 200     # Number of waypoints we will publish. For Test Lot, please put a value smaller than 60
+CIRCULAR_WPS    = False   # If True, assumes that the path to follow is a loop
+REFRESH_RATE_HZ = 50      # Number of times we update the final waypoints per second should be 50Hz for submission
+DEBUG_MODE      = False   # Switch for whether debug messages are printed.
+TL_DETECTOR_ON  = True    # If False, switches to direct traffic light subscription
+DECELLERATION   = 3.0     # Decelleration in m/s^2
+ACCELERATION    = 0.25    # Used to limit acceleration
+JERK            = 3.0     # Used to limit jerk
 
 def normalize_angle(angle):
     if angle > math.pi:
@@ -83,6 +85,7 @@ class WaypointUpdater(object):
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
 
         # Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         if TL_DETECTOR_ON:
@@ -98,6 +101,10 @@ class WaypointUpdater(object):
         self.next_waypoint = 0
         self.next_red_tl_wp = 0
         self.previous_pos = None
+        self.current_linear_velocity = 0
+        #self.current_linear_acceleration = 0
+        self.current_angular_velocity = 0
+        #self.previous_vel = 0
         self.waypoint_tree = None
         self.waypoints_2d = None
         self.static_waypoints = None
@@ -114,6 +121,11 @@ class WaypointUpdater(object):
 
     def pose_cb(self, msg):
         self.previous_pos = msg.pose
+
+
+    def current_velocity_cb(self, msg_TwistStamped):
+        self.current_linear_velocity = msg_TwistStamped.twist.linear.x
+        self.current_angular_velocity = msg_TwistStamped.twist.angular.z
 
     def waypoints_cb(self, waypoints):
         self.static_waypoints = waypoints.waypoints  # Lane message is a structure with header and waypoints
@@ -186,7 +198,7 @@ class WaypointUpdater(object):
                             first_slow_wp_set = True
                         self.set_waypoint_id_velocity(wp, target_vel)
 
-                rospy.logwarn("waypoint_updater: decreasing velocity from target speed %d to 0 between waypoints %d and %d",self.static_velocities[first_slow_wp],first_slow_wp,last_slow_wp)
+                rospy.logwarn("waypoint_updater: traffic_cb: decreasing velocity from target speed %d to 0 between waypoints %d and %d",self.static_velocities[first_slow_wp],first_slow_wp,last_slow_wp)
             else:
                 rospy.logwarn("waypoint_updater: resetting velocity targets to target speed %d",self.static_velocities[self.next_waypoint])
 
@@ -200,8 +212,14 @@ class WaypointUpdater(object):
     def set_waypoint_velocity(self, waypoint, velocity):
         waypoint.twist.twist.linear.x = velocity
 
+    def get_waypoint_velocity(self, waypoint):
+        return waypoint.twist.twist.linear.x
+
     def set_waypoint_id_velocity(self, waypoint_id, velocity):
         self.static_waypoints[waypoint_id].twist.twist.linear.x = velocity
+
+    def get_waypoint_id_velocity(self, waypoint_id):
+        return self.static_waypoints[waypoint_id].twist.twist.linear.x
 
     def restore_waypoint_id_velocity(self, waypoint_id):
         self.set_waypoint_id_velocity(waypoint_id, self.static_velocities[waypoint_id])
@@ -258,6 +276,15 @@ class WaypointUpdater(object):
 
     def next_waypoints(self):
         indices = self.next_waypoint_indices()
+        prev_vel = self.current_linear_velocity
+        prev_acc = 0 #assume initially 0 for now; figure this out if we see it's important
+        prev_index = indices[0]
+        for index in indices:
+            distance = euclidean_distance(self.static_waypoints[prev_index], self.static_waypoints[index])
+            self.set_waypoint_id_velocity(index, min(prev_vel + ACCELERATION, self.get_waypoint_id_velocity(index))) 
+            prev_index = index
+            prev_vel = self.get_waypoint_id_velocity(index)
+             
         return [self.static_waypoints[i] for i in indices]
 
     def publish_update(self):
